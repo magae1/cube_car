@@ -16,7 +16,7 @@ glm::mat4 viewMat;
 GLuint pvmMatrixID;
 
 float rotAngle = 0.0f;
-int isDrawingCar = false;
+int isDrawingCar = true;
 
 typedef glm::vec4  color4;
 typedef glm::vec4  point4;
@@ -91,8 +91,7 @@ void init() {
 	GLuint buffer;
 	glGenBuffers(1, &buffer);
 	glBindBuffer(GL_ARRAY_BUFFER, buffer);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(points) + sizeof(colors),
-		NULL, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(points) + sizeof(colors), NULL, GL_STATIC_DRAW);
 	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(points), points);
 	glBufferSubData(GL_ARRAY_BUFFER, sizeof(points), sizeof(colors), colors);
 
@@ -103,18 +102,16 @@ void init() {
 	// set up vertex arrays
 	GLuint vPosition = glGetAttribLocation(program, "vPosition");
 	glEnableVertexAttribArray(vPosition);
-	glVertexAttribPointer(vPosition, 4, GL_FLOAT, GL_FALSE, 0,
-		BUFFER_OFFSET(0));
+	glVertexAttribPointer(vPosition, 4, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(0));
 
 	GLuint vColor = glGetAttribLocation(program, "vColor");
 	glEnableVertexAttribArray(vColor);
-	glVertexAttribPointer(vColor, 4, GL_FLOAT, GL_FALSE, 0,
-		BUFFER_OFFSET(sizeof(points)));
+	glVertexAttribPointer(vColor, 4, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(sizeof(points)));
 
 	pvmMatrixID = glGetUniformLocation(program, "mPVM");
 
 	projectMat = glm::perspective(glm::radians(65.0f), 1.0f, 0.1f, 100.0f);
-	viewMat = glm::lookAt(glm::vec3(0, 0, 2), glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
+	viewMat = glm::lookAt(glm::vec3(1.3f), glm::vec3(0, 0, 0), glm::vec3(0, 0, -1));
 
 	glEnable(GL_DEPTH_TEST);
 	glClearColor(0.0, 0.0, 0.0, 1.0);
@@ -148,19 +145,20 @@ void drawCar(glm::mat4 carMat) {
 	for (int i = 0; i < 4; i++) {
 		modelMat = glm::translate(carMat, wheelPos[i]);  //P*V*C*T*S*v
 		modelMat = glm::scale(modelMat, glm::vec3(0.2, 0.1, 0.2));
-		modelMat = glm::rotate(modelMat, -rotAngle*50.0f, glm::vec3(0, 1, 0));
+		modelMat = glm::rotate(modelMat, -rotAngle*5.0f, glm::vec3(0, 1, 0));
 		pvmMat = projectMat * viewMat * modelMat;
 		glUniformMatrix4fv(pvmMatrixID, 1, GL_FALSE, &pvmMat[0][0]);
 		glDrawArrays(GL_TRIANGLES, 0, NumVertices);
 	}
 }
 
+//----------------------------------------------------------------------------
 
 void display(void) {
 	glm::mat4 worldMat, pvmMat;
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	worldMat = glm::rotate(glm::mat4(1.0f), rotAngle, glm::vec3(1.0f, 1.0f, 0.0f));
+	worldMat = glm::rotate(glm::mat4(1.0f), 0.0f, glm::vec3(1.0f, 1.0f, 0.0f));
 
 	if (isDrawingCar) {
 		drawCar(worldMat);
@@ -180,7 +178,7 @@ void idle() {
 	static int prevTime = glutGet(GLUT_ELAPSED_TIME);
 	int currTime = glutGet(GLUT_ELAPSED_TIME);
 
-	if (abs(currTime - prevTime) >= 20) {
+	if (abs(currTime - prevTime) >= 60) {
 		float t = abs(currTime - prevTime);
 		rotAngle += glm::radians(t*360.0f / 10000.0f);
 		prevTime = currTime;
@@ -198,6 +196,25 @@ void keyboard(unsigned char key, int x, int y) {
 	case 033:  // Escape key
 	case 'q': case 'Q':
 		exit(EXIT_SUCCESS);
+		break;
+	}
+}
+
+//----------------------------------------------------------------------------
+
+void specialKeyboard(int key, int cursorX, int cursorY) {
+	switch (key) {
+	case GLUT_KEY_UP:
+		std::cout << "KEY_UP" << std::endl;
+		break;
+	case GLUT_KEY_DOWN:
+		std::cout << "KEY_DOWN" << std::endl;
+		break;
+	case GLUT_KEY_LEFT:
+		std::cout << "KEY_LEFT" << std::endl;
+		break;
+	case GLUT_KEY_RIGHT:
+		std::cout << "KEY_RIGHT" << std::endl;
 		break;
 	}
 }
@@ -229,6 +246,7 @@ int main(int argc, char **argv) {
 
 	glutDisplayFunc(display);
 	glutKeyboardFunc(keyboard);
+	glutSpecialFunc(specialKeyboard);
 	glutReshapeFunc(resize);
 	glutIdleFunc(idle);
 
